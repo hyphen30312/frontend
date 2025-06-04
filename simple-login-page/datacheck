@@ -1,0 +1,55 @@
+ 
+from flask import Flask, request, jsonify
+import psycopg2
+ 
+app = Flask(__name__)
+ 
+def get_user_role(username):
+    try:
+        # Establishing the connection
+        conn = psycopg2.connect(
+            dbname="postgres",
+            user="postgres",
+            password="GenAI2024",
+            host="localhost",
+            port="5432"
+        )
+        cursor = conn.cursor()
+ 
+        # Query to check the username and role
+        query = "SELECT role FROM employee_detail1 WHERE username = %s;"
+        cursor.execute(query, (username,))
+        result = cursor.fetchone()
+ 
+        # Return the role if the user exists
+        if result:
+            return result[0]
+        else:
+            return None
+ 
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return None
+ 
+    finally:
+        if 'cursor' in locals():
+            cursor.close()
+        if 'conn' in locals():
+            conn.close()
+ 
+@app.route('/login', methods=['POST'])
+def login():
+    data = request.json
+    username = data.get('username')
+ 
+    if not username:
+        return jsonify({"error": "Username is required"}), 400
+ 
+    role = get_user_role(username)
+    if role:
+        return jsonify({"message": "Login successful", "role": role}), 200
+    else:
+        return jsonify({"error": "Invalid username"}), 401
+ 
+if __name__ == '__main__':
+    app.run(debug=True)
